@@ -15,8 +15,8 @@ module ShopifyAPITest
         shop: "test-shop.myshopify.io",
         access_token: "this_is_a_test_token"
       )
-      ShopifyAPI::Context.activate_session(test_session)
       modify_context(api_version: "2022-04")
+      ShopifyAPI::Context.activate_session(test_session)
     end
 
     def teardown
@@ -73,6 +73,21 @@ module ShopifyAPITest
       assert_equal("Cupertino", current_shop.city)
       assert_equal("California", current_shop.province)
       assert_equal("US", current_shop.country)
+    end
+
+    sig { void }
+    def test_current_shop_no_active_shop
+      stub_request(:get, "https://test-shop.myshopify.io/admin/api/2022-04/shop.json")
+        .with(
+          headers: { "X-Shopify-Access-Token" => "this_is_a_test_token", "Accept" => "application/json" },
+          body: {}
+        )
+        .to_return(status: 200, body: JSON.generate({}), headers: {})
+
+      current_shop = ShopifyAPI::Utils.current_shop()
+
+      assert_requested(:get, "https://test-shop.myshopify.io/admin/api/2022-04/shop.json")
+      assert_nil(current_shop)
     end
 
     sig { void }
