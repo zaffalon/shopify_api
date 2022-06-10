@@ -7,16 +7,17 @@ module ShopifyAPI
 
     sig do
       params(
+        session: Auth::Session,
         fields: T.untyped
-      ).returns(T.nilable(ShopifyAPI::Shop))
+      ).returns(Shop)
     end
-    def self.current_shop(fields: nil)
-      ShopifyAPI::Shop.all(fields: fields).first
+    def self.current_shop(session: Context.active_session, fields: nil)
+      T.cast(ShopifyAPI::Shop.all(session: session, fields: fields).first, Shop)
     end
 
-    sig { returns(T.nilable(ShopifyAPI::RecurringApplicationCharge)) }
+    sig { returns(T.nilable(RecurringApplicationCharge)) }
     def self.current_recurring_application_charge
-      ShopifyAPI::RecurringApplicationCharge.all.find { |c| c.status == "active" }
+      T.cast(ShopifyAPI::RecurringApplicationCharge.all.find { |c| c.status == "active" }, T.nilable(RecurringApplicationCharge))
     end
   end
 end

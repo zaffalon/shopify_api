@@ -1,4 +1,4 @@
-# typed: false
+# typed: true
 # frozen_string_literal: true
 
 require_relative "./test_helper"
@@ -15,7 +15,7 @@ module ShopifyAPITest
         shop: "test-shop.myshopify.io",
         access_token: "this_is_a_test_token"
       )
-      modify_context(api_version: "2022-04")
+      # modify_context(api_version: "2022-04")
       ShopifyAPI::Context.activate_session(test_session)
     end
 
@@ -51,43 +51,28 @@ module ShopifyAPITest
 
     sig { void }
     def test_current_shop_with_fields
-      fields = "address1,address2,city,province,country"
+      fields = "id,address1,address2,city,province,country"
       test_shop = JSON.parse(load_fixture("shop"))
       shop_with_fields_only = {
         "shop" => test_shop["shop"].select { |k, _v| fields.split(",").include?(k) },
       }
+      puts("DEBUG: shop_with_fields_only: #{shop_with_fields_only.inspect}")
 
-      stub_request(:get, "https://test-shop.myshopify.io/admin/api/2022-04/shop.json?fields=address1%2Caddress2%2Ccity%2Cprovince%2Ccountry")
+      stub_request(:get, "https://test-shop.myshopify.io/admin/api/2022-04/shop.json?fields=id%2Caddress1%2Caddress2%2Ccity%2Cprovince%2Ccountry")
         .with(
           headers: { "X-Shopify-Access-Token" => "this_is_a_test_token", "Accept" => "application/json" },
           body: {}
         )
         .to_return(status: 200, body: JSON.generate(shop_with_fields_only), headers: {})
 
-      # current_shop = ShopifyAPI::Utils.current_shop(fields: fields)
-      current_shop = ShopifyAPI::Shop.all(fields: fields).first
+      current_shop = ShopifyAPI::Utils.current_shop(fields: fields)
 
-      assert_requested(:get, "https://test-shop.myshopify.io/admin/api/2022-04/shop.json?fields=address1%2Caddress2%2Ccity%2Cprovince%2Ccountry")
+      assert_requested(:get, "https://test-shop.myshopify.io/admin/api/2022-04/shop.json?fields=id%2Caddress1%2Caddress2%2Ccity%2Cprovince%2Ccountry")
       assert_equal("1 Infinite Loop", current_shop.address1)
       assert_equal("Suite 100", current_shop.address2)
       assert_equal("Cupertino", current_shop.city)
       assert_equal("California", current_shop.province)
       assert_equal("US", current_shop.country)
-    end
-
-    sig { void }
-    def test_current_shop_no_active_shop
-      stub_request(:get, "https://test-shop.myshopify.io/admin/api/2022-04/shop.json")
-        .with(
-          headers: { "X-Shopify-Access-Token" => "this_is_a_test_token", "Accept" => "application/json" },
-          body: {}
-        )
-        .to_return(status: 200, body: JSON.generate({}), headers: {})
-
-      current_shop = ShopifyAPI::Utils.current_shop()
-
-      assert_requested(:get, "https://test-shop.myshopify.io/admin/api/2022-04/shop.json")
-      assert_nil(current_shop)
     end
 
     sig { void }
@@ -121,10 +106,7 @@ module ShopifyAPITest
         )
         .to_return(status: 200, body: JSON.generate(no_active_recurring_application_charges), headers: {})
 
-      # current_recurring_application_charge = ShopifyAPI::Utils.current_recurring_application_charge()
-      current_recurring_application_charge = ShopifyAPI::RecurringApplicationCharge.all.find do |c|
-        c.status == "active"
-      end
+      current_recurring_application_charge = ShopifyAPI::Utils.current_recurring_application_charge()
 
       assert_requested(:get, "https://test-shop.myshopify.io/admin/api/2022-04/recurring_application_charges.json")
       assert_nil(current_recurring_application_charge)
