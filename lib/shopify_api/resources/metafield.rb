@@ -7,7 +7,7 @@ module ShopifyAPI
 
     def value
       return if attributes["value"].nil?
-      attributes["value_type"] == "integer" ? attributes["value"].to_i : attributes["value"]
+      %w[integer number_integer].include?(attributes["type"]) ? attributes["value"].to_i : attributes["value"]
     end
   end
 end
